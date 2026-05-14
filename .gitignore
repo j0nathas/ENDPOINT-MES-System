@@ -1,0 +1,14 @@
+**/.env
+**/pm2.bat
+logs/
+*.log
+**/node_modules
+**/package-lock.json
+**/yarn.lock
+**/dist
+**/build
+**/.vscode
+**/.idea
+**/.DS_Store
+**/Thumbs.db
+
