@@ -178,7 +178,7 @@ app.get('/movimentacaoinjecao/:ano/:mes', async (req, res) => {
 
 app.get('/oee/small/:ano/:mes', async (req, res) => {
 
-  const { ano, mes, maquina, movimentacao } = req.params;
+  const { ano, mes } = req.params;
 
   try {
 
@@ -201,6 +201,39 @@ app.get('/oee/small/:ano/:mes', async (req, res) => {
         ORDER BY DATAI DESC
     `);
 
+    res.json(resultado.recordset);
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: "Erro ao consultar banco"
+    });
+
+  }
+
+});
+
+app.get('/itens_os/:inicio/:fim', async (req, res) => {
+
+  const { inicio, fim } = req.params;
+
+  try {
+
+    await poolConnect;
+
+    const request = pool.request();
+
+    request.input('inicio', sql.Date, Date(new Date(inicio)));
+    request.input('fim', sql.Date, Date(new Date(fim)));
+
+    const resultado = await request.query(`
+             SELECT * FROM [PCPMOV].[dbo].[ITENSOS]
+              WHERE DATA_MODIFICACAO >= @inicio
+                    AND DATA_MODIFICACAO <= @fim
+                    ORDER BY DATA_MODIFICACAO DESC, HORA_MODIFICACAO DESC
+    `);
     res.json(resultado.recordset);
 
   } catch (erro) {
