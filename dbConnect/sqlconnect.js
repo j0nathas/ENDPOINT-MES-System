@@ -123,7 +123,7 @@ app.get('/movimentacaosmall/:ano/:mes', async (req, res) => {
     request.input('mes', sql.Int, parseInt(mes));
 
     const resultado = await request.query(`
-        SELECT [TIPO_MOV],[CODMOV],[MAQUINA],[DATAI],[HORAI],[DATAF],[HORAF],[TURNO],[PARADA_PREVISTA]
+        SELECT *
         FROM dbo.MOVIMENTACAO
         WHERE TIPO_MOV IN ('P')
           AND MAQUINA BETWEEN 34 AND 53 
@@ -176,9 +176,41 @@ app.get('/movimentacaoinjecao/:ano/:mes', async (req, res) => {
   }
 });
 
-app.get('/oee/small/:ano/:mes', async (req, res) => {
+app.get('/movimentacaoGeral/:maquina/:tipo_mov/:datai', async (req, res) => {
+  const { maquina, tipo_mov, datai } = req.params;
 
-  const { ano, mes } = req.params;
+  if (!maquina || !tipo_mov || !datai) {
+    return res.status(400).json({ erro: 'Parâmetros inválidos' });
+  }
+
+  try {
+    await poolConnect;
+
+    const request = pool.request();
+
+    request.input('maquina', sql.Int, parseInt(maquina));
+    request.input('tipo_mov', sql.VarChar, tipo_mov);
+    request.input('datai', sql.Date, Date(new Date(datai)));
+
+    const resultado = await request.query(`
+        SELECT *FROM dbo.MOVIMENTACAO
+        WHERE TIPO_MOV IN (@tipo_mov)
+          AND MAQUINA = @maquina
+          AND DATAI = @datai
+        ORDER BY DATAI DESC, HORAI DESC
+    `);
+
+    res.json(resultado.recordset);
+
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Erro ao consultar banco" });
+  }
+});
+
+app.get('/oee/small/:ano/:mes/:dia', async (req, res) => {
+
+  const { ano, mes, dia } = req.params;
 
   try {
 
@@ -186,18 +218,16 @@ app.get('/oee/small/:ano/:mes', async (req, res) => {
 
     const request = pool.request();
 
-    request.input('ano', sql.VarChar, ano);
-    request.input('mes', sql.VarChar, mes);
+    request.input('ano', sql.Int, parseInt(ano));
+    request.input('mes', sql.Int, parseInt(mes));
+    request.input('dia', sql.Int, parseInt(dia));
 
     const resultado = await request.query(`
-        SELECT [MAQUINA],[DATAI],[DATAF],[HORA],[HT],[HD],[HF],[HP],[HPP],[HPNP],[HFP],[HVR],[HOFFLINE],[QTDE_VAR_RITMO],[QTDE_TEORICA_P]
-      ,[QTDE_TEORICA_PP],[QTDE_TEORICA_PNP],[QTDE_TEORICA_F],[QTDE_TEORICA],[QTDE_PRD_PARADA],[QTDE_PRODUZIDA],[QTDE_PRD_FABRIC],[QTDE_PRD_PP],
-      [QTDE_PRD_PNP],[QTDE_REJEITADA],[QTDE_REJEITADA_PREVISTA],[QTDE_REJEITADA_SEM_DESC],[QTDE_REJEITADA_PP],[QTDE_REJEITADA_PNP],[QTDE_BOAS],[IR],[ID],[IP],[IQ],[IVR]
-      ,[OEE],[TURNO],DISP_TEEP],[TEEP]
-  FROM [PCPMOV].[dbo].[OEE_HORARIO]
+        SELECT * FROM [PCPMOV].[dbo].[OEE_HORARIO]
   WHERE MAQUINA BETWEEN 34 AND 53
   AND YEAR(DATAI) = @ano
         AND MONTH(DATAI) = @mes
+        AND DAY(DATAI) = @dia
         ORDER BY DATAI DESC
     `);
 
